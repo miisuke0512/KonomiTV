@@ -40,6 +40,7 @@ export interface IClientSettings {
     timetable_channel_width: TimeTableSizeOption;
     timetable_hour_height: TimeTableSizeOption;
     timetable_hover_expand: boolean;
+    timetable_dim_shopping_programs: boolean;
     timetable_genre_colors: ITimeTableGenreColors;
     panel_display_state: 'RestorePreviousState' | 'AlwaysDisplay' | 'AlwaysFold';
     tv_panel_active_tab: 'Program' | 'Channel' | 'Comment' | 'Twitter';
