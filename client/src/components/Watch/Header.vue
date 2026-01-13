@@ -8,7 +8,10 @@
         <span class="watch-header__program-title" v-html="programTitleHtml"></span>
         <span class="watch-header__program-time">{{programTimeText}}</span>
         <v-spacer></v-spacer>
-        <span class="watch-header__now">{{time}}</span>
+        <span class="watch-header__now">
+            <Icon v-if="is_showing_original_broadcast_time" class="watch-header__timeshift-icon" icon="fluent:history-16-regular" width="16px" />
+            {{time}}
+        </span>
     </header>
 </template>
 <script lang="ts">
@@ -20,6 +23,7 @@ import type { Dayjs } from 'dayjs';
 
 import useChannelsStore from '@/stores/ChannelsStore';
 import usePlayerStore from '@/stores/PlayerStore';
+import useSettingsStore from '@/stores/SettingsStore';
 import Utils, { dayjs, ProgramUtils } from '@/utils';
 
 export default defineComponent({
@@ -37,8 +41,11 @@ export default defineComponent({
             Utils: Object.freeze(Utils),
             ProgramUtils: Object.freeze(ProgramUtils),
 
-            // 現在時刻
+            // 現在時刻 (ライブ再生時は現在時刻、録画再生時は設定に応じて録画当時の時刻または現在時刻)
             time: dayjs().format(Utils.isSmartphoneHorizontal() ? 'HH:mm:ss' : 'YYYY/MM/DD HH:mm:ss'),
+
+            // 録画再生時の再生位置 (秒)
+            playback_position: 0,
         };
     },
     computed: {
@@ -87,10 +94,24 @@ export default defineComponent({
             return `${minutes}:${seconds.toString().padStart(2, '0')}`;
         },
         updateTimeCore(): number {
-            const time = dayjs();
-            this.time = this.formatTime(time);
-            const ms = time.millisecond();
-            return ms > 800 ? 500 : 1000 - ms;
+            // 元の放送時刻を表示すべき場合は、元の放送時刻を計算して表示
+            if (this.is_showing_original_broadcast_time === true) {
+                // 再生中の場合のみ、元の放送時刻を計算して表示
+                // 一時停止中の場合は、一時停止した時点の時刻がそのまま表示される
+                if (this.playerStore.is_video_paused === false) {
+                    this.time = this.formatTime(this.getOriginalBroadcastTime());
+                }
+                // 再生位置から計算した時刻なので、現在時刻の秒境界に同期させる必要はない
+                // 単に 1 秒ごとに更新する
+                return 1000;
+            } else {
+                // 通常は現在時刻を表示
+                const now = dayjs();
+                this.time = this.formatTime(now);
+                // 現在時刻モードでは秒の境界にぴったり合わせて更新
+                const ms = now.millisecond();
+                return ms > 800 ? 500 : 1000 - ms;
+            }
         },
         uptimeTime() {
             setTimeout(() => {
@@ -104,6 +125,15 @@ export default defineComponent({
         setTimeout(() => {
             this.uptimeTime();
         }, 1000);
+
+        // 録画再生時: 再生位置が変更されたときに playback_position を更新
+        this.playerStore.event_emitter.on('PlaybackPositionChanged', (event) => {
+            this.playback_position = event.playback_position;
+            // シーク時は即座に表示を更新
+            if (this.is_showing_original_broadcast_time === true) {
+                this.time = this.formatTime(this.getOriginalBroadcastTime());
+            }
+        });
     },
     beforeUnmount() {
         this.uptimeTime = ()=>{ };
@@ -269,6 +299,8 @@ export default defineComponent({
     }
 
     .watch-header__now {
+        display: flex;
+        align-items: center;
         flex-shrink: 0;
         margin-left: 16px;
         font-size: 13px;
@@ -279,6 +311,12 @@ export default defineComponent({
         }
         @include smartphone-vertical {
             display: none;
+        }
+
+        .watch-header__timeshift-icon {
+            flex-shrink: 0;
+            margin-right: 4px;
+            opacity: 0.8;
         }
     }
 }

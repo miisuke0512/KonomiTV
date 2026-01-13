@@ -31,6 +31,7 @@ from app.constants import (
     BASE_DIR,
     LIBRARY_PATH,
 )
+from app.utils.TSInformation import TerrestrialRegion
 
 
 # クライアント設定を表す Pydantic モデル (クライアント設定同期用 API で利用)
@@ -76,9 +77,11 @@ class ClientSettings(BaseModel):
     use_pure_black_player_background: bool = False
     tv_channel_selection_requires_alt_key: bool = False
     use_28hour_clock: bool = False
+    show_original_broadcast_time_during_playback: bool = False
     panel_display_state: Literal['RestorePreviousState', 'AlwaysDisplay', 'AlwaysFold'] = 'RestorePreviousState'
     tv_panel_active_tab: Literal['Program', 'Channel', 'Comment', 'Twitter'] = 'Program'
     video_panel_active_tab: Literal['RecordedProgram', 'Series', 'Comment', 'Twitter'] = 'RecordedProgram'
+    video_watched_history_max_count: Annotated[int, PositiveInt] = 50
     # tv_streaming_quality: 同期無効
     # tv_streaming_quality_cellular: 同期無効
     # tv_data_saver_mode: 同期無効
@@ -330,6 +333,7 @@ class _ServerSettingsServer(BaseModel):
         return port
 
 class _ServerSettingsTV(BaseModel):
+    preferred_terrestrial_region: TerrestrialRegion | None = None
     max_alive_time: PositiveInt = 10
     debug_mode_ts_path: FilePath | None = None
 
@@ -373,6 +377,33 @@ def LoadConfig(bypass_validation: bool = False) -> ServerSettings:
         ServerSettings: 読み込んだサーバー設定データ
     """
 
+    def MergeConfigWithDefaults(config_dict: dict[str, Any]) -> dict[str, Any]:
+        """
+        config.yaml の読み込み結果をデフォルト設定とマージする
+
+        Args:
+            config_dict (dict[str, Any]): config.yaml から読み込んだ設定データ
+
+        Returns:
+            dict[str, Any]: デフォルト設定とマージ済みの設定データ
+        """
+
+        def merge_dicts(base_dict: dict[str, Any], override_dict: dict[str, Any]) -> dict[str, Any]:
+            merged_dict = dict(base_dict)
+            for key, value in override_dict.items():
+                if (
+                    key in merged_dict
+                    and isinstance(merged_dict[key], dict)
+                    and isinstance(value, dict)
+                ):
+                    merged_dict[key] = merge_dicts(merged_dict[key], value)
+                else:
+                    merged_dict[key] = value
+            return merged_dict
+
+        default_config_dict = ServerSettings().model_dump(mode='json')
+        return merge_dicts(default_config_dict, config_dict)
+
     global _CONFIG, _CONFIG_YAML_PATH, _DOCKER_PATH_PREFIX
     assert _CONFIG is None, 'LoadConfig() has already been called.'
 
@@ -401,6 +432,9 @@ def LoadConfig(bypass_validation: bool = False) -> ServerSettings:
         sys.exit(1)
 
     try:
+        # config.yaml に存在しない設定値はデフォルト値で補完する
+        config_dict = MergeConfigWithDefaults(config_dict)
+
         # Docker 上で実行されているとき、サーバー設定のうちパス指定の項目に Docker 環境向けの Prefix (/host-rootfs) を付ける
         ## /host-rootfs (docker-compose.yaml で定義) を通してホストマシンのファイルシステムにアクセスできる
         if GetPlatformEnvironment() == 'Linux-Docker':
@@ -489,7 +523,16 @@ def SaveConfig(config: ServerSettings) -> None:
     # config.yaml の内容を更新して保存
     # コメントやフォーマットを保持して保存するために更新方法を工夫している
     for key in config_dict:
+        # config.yaml 側に存在しないセクションがある場合は新規で作成する
+        if key not in config_raw or config_raw[key] is None:
+            config_raw[key] = ruamel.yaml.CommentedMap()
         for sub_key in config_dict[key]:
+            # config.yaml 側に存在しないキーがある場合は新規で作成する
+            if sub_key not in config_raw[key]:
+                if type(config_dict[key][sub_key]) is list:
+                    config_raw[key][sub_key] = ruamel.yaml.CommentedSeq()
+                else:
+                    config_raw[key][sub_key] = None
             # 文字列のリストを更新する場合は clear() と extend() を使う
             if type(config_dict[key][sub_key]) is list:
                 if type(config_raw[key][sub_key]) is ruamel.yaml.CommentedSeq:

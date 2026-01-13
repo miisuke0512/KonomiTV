@@ -811,12 +811,16 @@ body.capacitor-ios {
                             font-size: 14px;
                         }
                         @include smartphone-horizontal {
+                            display: block;
                             font-size: 14px;
-                            -webkit-line-clamp: 1;  // 1行までに制限
+                            white-space: nowrap;
+                            text-overflow: ellipsis;
                         }
                         @include smartphone-vertical {
+                            display: block;
                             font-size: 14px;
-                            -webkit-line-clamp: 1;  // 1行までに制限
+                            white-space: nowrap;
+                            text-overflow: ellipsis;
                         }
                     }
 
@@ -1022,7 +1026,6 @@ body.capacitor-ios {
     justify-content: center;
     align-items: center;
     position: fixed;
-    // ボトムナビゲーション (56px) + セーフエリア + 余裕 (16px) 分上に配置
     bottom: calc(56px + env(safe-area-inset-bottom) + 16px);
     right: 20px;
     padding: 12px 16px;

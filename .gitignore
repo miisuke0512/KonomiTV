@@ -153,6 +153,7 @@ server/data/*.*
 server/data/account-icons/*.*
 server/data/clip_videos/*.*
 server/data/thumbnails/*.*
+server/data/thumbnails/old/*.*
 server/static/interlaced_*
 
 # thirdparty

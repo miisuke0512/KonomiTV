@@ -163,6 +163,23 @@
                 </v-switch>
             </div>
             <div class="settings__item">
+                <div class="settings__item-heading">チャンネル表示・選局で優先するエリア (地デジ)</div>
+                <div class="settings__item-label">
+                    複数の地域の放送波が受信できる環境で、リモコン番号が同じチャンネルが複数ある場合に、どのエリアのチャンネルを優先して表示・選局するかを設定します。デフォルトは未設定です。<br>
+                </div>
+                <div class="settings__item-label mt-1">
+                    優先エリアのチャンネルは枝番なし (例: Ch:011) で、それ以外のチャンネルは枝番付き (例: Ch:011-1) で表示されます。キーボードショートカットやリモコンボタンでの選局時も、優先エリアのチャンネルが選局されます。<br>
+                </div>
+                <div class="settings__item-label mt-1">
+                    設定しない場合は、(ネットワークID)-(サービスID) の数値順で優先順位が決まります。<br>
+                </div>
+                <v-select class="settings__item-form" color="primary" variant="outlined" hide-details
+                    :density="is_form_dense ? 'compact' : 'default'"
+                    :items="preferred_terrestrial_region_options"
+                    v-model="server_settings.tv.preferred_terrestrial_region">
+                </v-select>
+            </div>
+            <div class="settings__item">
                 <div class="settings__item-heading">誰も見ていないチャンネルのエンコードタスクを維持する秒数</div>
                 <div class="settings__item-label">
                     10 秒に設定したなら、10 秒間誰も見ていない状態が継続したらエンコードタスク（エンコーダー）を終了します。<br>
@@ -392,6 +409,64 @@ import SettingsBase from '@/views/Settings/Base.vue';
 
 // フォームを小さくするかどうか
 const is_form_dense = Utils.isSmartphoneHorizontal();
+
+// 優先する地デジのエリアの選択肢
+const preferred_terrestrial_region_options = [
+    { title: '未設定', value: null },
+    { title: '北海道（札幌）', value: '北海道（札幌）' },
+    { title: '北海道（函館）', value: '北海道（函館）' },
+    { title: '北海道（旭川）', value: '北海道（旭川）' },
+    { title: '北海道（帯広）', value: '北海道（帯広）' },
+    { title: '北海道（釧路）', value: '北海道（釧路）' },
+    { title: '北海道（北見）', value: '北海道（北見）' },
+    { title: '北海道（室蘭）', value: '北海道（室蘭）' },
+    { title: '青森県', value: '青森県' },
+    { title: '岩手県', value: '岩手県' },
+    { title: '宮城県', value: '宮城県' },
+    { title: '秋田県', value: '秋田県' },
+    { title: '山形県', value: '山形県' },
+    { title: '福島県', value: '福島県' },
+    { title: '茨城県', value: '茨城県' },
+    { title: '栃木県', value: '栃木県' },
+    { title: '群馬県', value: '群馬県' },
+    { title: '埼玉県', value: '埼玉県' },
+    { title: '千葉県', value: '千葉県' },
+    { title: '東京都', value: '東京都' },
+    { title: '神奈川県', value: '神奈川県' },
+    { title: '新潟県', value: '新潟県' },
+    { title: '富山県', value: '富山県' },
+    { title: '石川県', value: '石川県' },
+    { title: '福井県', value: '福井県' },
+    { title: '山梨県', value: '山梨県' },
+    { title: '長野県', value: '長野県' },
+    { title: '岐阜県', value: '岐阜県' },
+    { title: '静岡県', value: '静岡県' },
+    { title: '愛知県', value: '愛知県' },
+    { title: '三重県', value: '三重県' },
+    { title: '滋賀県', value: '滋賀県' },
+    { title: '京都府', value: '京都府' },
+    { title: '大阪府', value: '大阪府' },
+    { title: '兵庫県', value: '兵庫県' },
+    { title: '奈良県', value: '奈良県' },
+    { title: '和歌山県', value: '和歌山県' },
+    { title: '鳥取県', value: '鳥取県' },
+    { title: '島根県', value: '島根県' },
+    { title: '岡山県', value: '岡山県' },
+    { title: '広島県', value: '広島県' },
+    { title: '山口県', value: '山口県' },
+    { title: '徳島県', value: '徳島県' },
+    { title: '香川県', value: '香川県' },
+    { title: '愛媛県', value: '愛媛県' },
+    { title: '高知県', value: '高知県' },
+    { title: '福岡県', value: '福岡県' },
+    { title: '佐賀県', value: '佐賀県' },
+    { title: '長崎県', value: '長崎県' },
+    { title: '熊本県', value: '熊本県' },
+    { title: '大分県', value: '大分県' },
+    { title: '宮崎県', value: '宮崎県' },
+    { title: '鹿児島県', value: '鹿児島県' },
+    { title: '沖縄県', value: '沖縄県' },
+];
 
 // ユーザー情報を取得し、もし管理者権限であれば無効化を解除
 const is_disabled = ref(true);
